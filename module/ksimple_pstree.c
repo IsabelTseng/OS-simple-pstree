@@ -2,6 +2,9 @@
 #include <net/sock.h>
 #include <linux/netlink.h>
 #include <linux/skbuff.h>
+#include <linux/init.h>
+#include <linux/types.h>
+// #include <lib/string.c>
 
 
 #define NETLINK_USER 31
@@ -17,13 +20,54 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
     int msg_size;
     char *msg="Hello from kernel";
     int res;
-
     printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
+    nlh=(struct nlmsghdr*)skb->data;
+    printk(KERN_INFO "Netlink received msg payload:%s\n",(char*)nlmsg_data(nlh));
+    /*my var space*/
+
+    long mypid = DUPLEX_UNKNOWN;
+    struct pid *pid_struct;
+    struct task_struct *task;
+    char test[100] = {};
+    char* user_to_kernal = "";
+    //strcpy(user_to_kernal, (char*)nlmsg_data(nlh));
+    // printk(KERN_INFO "ooooo: %s\n", (char*)nlmsg_data(nlh));
+    user_to_kernal = (char*)nlmsg_data(nlh);
+    printk(KERN_INFO "user_to_kernal: %s\n", user_to_kernal);
+    char option = 'n';
+    // long duplex_mode = DUPLEX_UNKNOWN;
+
+    // if(user_to_kernal[0]>'a'){
+    option = user_to_kernal[0];
+    kstrtol(user_to_kernal+2, 10, &mypid);
+    // }else if(user_to_kernal[0]>='0' && user_to_kernal[0]<='9'){
+    // kstrtol(user_to_kernal, 10, &mypid);
+    // }
+
+    // msg = option;
+    // strcat(msg, "+");
+    // strcat(msg, mypid);
+    // msg = "FFFFFFFFFFFFFFF";
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "msg: %s\n", user_to_kernal);
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+
+    printk(KERN_INFO "mypid: %d\n", mypid);
+    pid_struct = find_get_pid((int)mypid);
+    task = pid_task(pid_struct,PIDTYPE_PID);
+    sprintf(test,"name %s\n ",task->comm);
+    printk(KERN_INFO "test: %s\n", test);
+
+
 
     msg_size=strlen(msg);
 
-    nlh=(struct nlmsghdr*)skb->data;
-    printk(KERN_INFO "Netlink received msg payload:%s\n",(char*)nlmsg_data(nlh));
+
     pid = nlh->nlmsg_pid; /*pid of sending process */
 
     skb_out = nlmsg_new(msg_size,0);

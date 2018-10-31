@@ -14,11 +14,39 @@ struct iovec iov;
 int sock_fd;
 struct msghdr msg;
 
-int main()
+int main(int argc, char* argv[])
 {
     sock_fd=socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
     if(sock_fd<0)
         return -1;
+
+    printf("before test\n");
+    char* test="c1";
+    char* pid="";
+    char* option = "";
+    if(argc == 1) {
+        option = "c 1";
+    } else if(argc == 2) {
+        char msg_to_kernal[12];  //in order not to overflow when sprintf
+        if(argv[1][0] == '-') {
+            // char* delim = "-";
+            if(strlen(argv[1])==2) {
+                // option = strtok(argv[1], delim);
+                if(argv[1][1] == 'p') {
+                    int defaultPid = getpid();
+                    sprintf(msg_to_kernal, "p %d", defaultPid);
+                } else {
+                    sprintf(msg_to_kernal, "%c %d",argv[1][1], 1);
+                }
+            } else {
+                sprintf(msg_to_kernal, "%c %s",argv[1][1], argv[1]+2);
+            }
+        } else if(argv[1][0]>='0' && argv[1][0]<='9') {
+            sprintf(msg_to_kernal, "c %s", argv[1]);
+        }
+        option = msg_to_kernal;
+    }
+    printf("option: %s\n",option);
 
     memset(&src_addr, 0, sizeof(src_addr));
     src_addr.nl_family = AF_NETLINK;
@@ -38,7 +66,7 @@ int main()
     nlh->nlmsg_pid = getpid();
     nlh->nlmsg_flags = 0;
 
-    strcpy(NLMSG_DATA(nlh), "Hello");
+    strcpy(NLMSG_DATA(nlh), option);
 
     iov.iov_base = (void *)nlh;
     iov.iov_len = nlh->nlmsg_len;
