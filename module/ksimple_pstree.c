@@ -50,15 +50,20 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
     printk(KERN_INFO "option: %c mypid: %d\n",option, mypid);
 
     pid_struct = find_get_pid((int)mypid);
-    task = pid_task(pid_struct,PIDTYPE_PID);
+    if(pid_struct == NULL) {
+        msg="";
+        printk(KERN_INFO "NO SUCH PID\n");
+    } else {
+        task = pid_task(pid_struct,PIDTYPE_PID);
 
-    if(option == 's') {
-        optionS(task, buf);
-    } else if(option == 'p') {
-        optionP(task, buf);
-    } else if(option == 'c') {
-        buflen += sprintf(buf, "%s(%d)\n",task->comm,task->pid);
-        optionC(task, buf, 1);
+        if(option == 's') {
+            optionS(task, buf);
+        } else if(option == 'p') {
+            optionP(task, buf);
+        } else if(option == 'c') {
+            buflen += sprintf(buf, "%s(%d)\n",task->comm,task->pid);
+            optionC(task, buf, 1);
+        }
     }
 
     // sprintf(test,"name %s\n ",task->comm);
