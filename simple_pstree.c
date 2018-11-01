@@ -7,7 +7,7 @@
 
 #define NETLINK_USER 31
 
-#define MAX_PAYLOAD 1024 /* maximum payload size*/
+#define MAX_PAYLOAD 20024 /* maximum payload size*/
 struct sockaddr_nl src_addr, dest_addr;
 struct nlmsghdr *nlh = NULL;
 struct iovec iov;
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     if(sock_fd<0)
         return -1;
 
-    printf("before test\n");
+    // printf("before test\n");
     // char* test="c1";
     // char* pid="";
     char* option = "";
@@ -33,10 +33,10 @@ int main(int argc, char* argv[])
             if(strlen(argv[1])==2) {
                 // option = strtok(argv[1], delim);
                 if(argv[1][1] == 'c') {
-                    sprintf(msg_to_kernal, "%c %d",argv[1][1], 1);
+                    sprintf(msg_to_kernal, "c %d", 1);
                 } else {
                     int defaultPid = getpid();
-                    sprintf(msg_to_kernal, "p %d", defaultPid);
+                    sprintf(msg_to_kernal, "%c %d",argv[1][1], defaultPid);
                 }
             } else {
                 sprintf(msg_to_kernal, "%c %s",argv[1][1], argv[1]+2);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
         }
         option = msg_to_kernal;
     }
-    printf("option: %s\n",option);
+    // printf("option: %s\n",option);
 
     memset(&src_addr, 0, sizeof(src_addr));
     src_addr.nl_family = AF_NETLINK;
@@ -75,12 +75,12 @@ int main(int argc, char* argv[])
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
-    printf("Sending message to kernel\n");
+    // printf("Sending message to kernel\n");
     sendmsg(sock_fd,&msg,0);
-    printf("Waiting for message from kernel\n");
+    // printf("Waiting for message from kernel\n");
 
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
-    printf("Received message payload: %s\n", (char *)NLMSG_DATA(nlh));
+    printf("%s", (char *)NLMSG_DATA(nlh));
     close(sock_fd);
 }

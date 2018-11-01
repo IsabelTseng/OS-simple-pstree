@@ -23,7 +23,7 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
     int pid;
     struct sk_buff *skb_out;
     int msg_size;
-    char *msg="Hello from kernel";
+    char *msg="";
     char buf[10000] = "";
     int res;
     printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
@@ -57,7 +57,8 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
     } else if(option == 'p') {
         optionP(task, buf);
     } else if(option == 'c') {
-        optionC(task, buf, 0);
+        buflen += sprintf(buf, "%s(%d)\n",task->comm,task->pid);
+        optionC(task, buf, 1);
     }
 
     // sprintf(test,"name %s\n ",task->comm);
@@ -118,13 +119,27 @@ int optionP(struct task_struct *task, char* buf)
     struct task_struct *t;
     int len = 0;
     t = task;
+    int parentPids[50]= {0};
+    int countParents = 0;
+    struct pid *pid_struct;
     do {
-        len += sprintf(buf+len, "%s(%d)\n",t->comm,t->pid);
-        printk(KERN_INFO "buf: %s %n\n",t->comm,t->pid);
+        parentPids[countParents++] = (int)(t->pid);
         t = t->parent;
     } while (t->pid != 0);
-}
+    int spaceCount = 0;
+    do {
+        pid_struct = find_get_pid(parentPids[--countParents]);
+        t = pid_task(pid_struct,PIDTYPE_PID);
+        int i;
+        for(i=0; i<spaceCount; ++i) {
+            len += sprintf(buf+len, "    ");
+        }
+        ++spaceCount;
+        len += sprintf(buf+len, "%s(%d)\n",t->comm,t->pid);
+        printk(KERN_INFO "buf: %s %n\n",t->comm,t->pid);
+    } while (countParents > 0);
 
+}
 int optionC(struct task_struct *task, char* buf, int tabCount)
 {
     struct task_struct *task1;
