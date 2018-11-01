@@ -4,21 +4,27 @@
 #include <linux/skbuff.h>
 #include <linux/init.h>
 #include <linux/types.h>
+#include <linux/list.h>
 // #include <lib/string.c>
 
 
 #define NETLINK_USER 31
 
 struct sock *nl_sk = NULL;
+int buflen = 0;
+
+int optionS(struct task_struct *task, char* buf);
+int optionP(struct task_struct *task, char* buf);
+int optionC(struct task_struct *task, char* buf, int tabCount);
 
 static void hello_nl_recv_msg(struct sk_buff *skb)
 {
-
     struct nlmsghdr *nlh;
     int pid;
     struct sk_buff *skb_out;
     int msg_size;
     char *msg="Hello from kernel";
+    char buf[10000] = "";
     int res;
     printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
     nlh=(struct nlmsghdr*)skb->data;
@@ -30,40 +36,41 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
     struct task_struct *task;
     char test[100] = {};
     char* user_to_kernal = "";
-    //strcpy(user_to_kernal, (char*)nlmsg_data(nlh));
-    // printk(KERN_INFO "ooooo: %s\n", (char*)nlmsg_data(nlh));
+    //init
+    msg="";
+    sprintf(buf, "");
+    buflen = 0;
+
     user_to_kernal = (char*)nlmsg_data(nlh);
     printk(KERN_INFO "user_to_kernal: %s\n", user_to_kernal);
     char option = 'n';
-    // long duplex_mode = DUPLEX_UNKNOWN;
-
-    // if(user_to_kernal[0]>'a'){
     option = user_to_kernal[0];
     kstrtol(user_to_kernal+2, 10, &mypid);
-    // }else if(user_to_kernal[0]>='0' && user_to_kernal[0]<='9'){
-    // kstrtol(user_to_kernal, 10, &mypid);
-    // }
 
-    // msg = option;
-    // strcat(msg, "+");
-    // strcat(msg, mypid);
-    // msg = "FFFFFFFFFFFFFFF";
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "msg: %s\n", user_to_kernal);
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
-    // printk(KERN_INFO "!!!!!!!!!!!!!!!!!!!!!\n");
+    printk(KERN_INFO "option: %c mypid: %d\n",option, mypid);
 
-    printk(KERN_INFO "mypid: %d\n", mypid);
     pid_struct = find_get_pid((int)mypid);
     task = pid_task(pid_struct,PIDTYPE_PID);
-    sprintf(test,"name %s\n ",task->comm);
-    printk(KERN_INFO "test: %s\n", test);
 
+    if(option == 's') {
+        optionS(task, buf);
+    } else if(option == 'p') {
+        optionP(task, buf);
+    } else if(option == 'c') {
+        optionC(task, buf, 0);
+    }
 
+    // sprintf(test,"name %s\n ",task->comm);
+    printk(KERN_INFO "PIDDDDDD: %d\n", (int)mypid);
+    // printk(KERN_INFO "testlen: %d\n", (int)strlen(test));
+
+    // sprintf(buf,"buf %s\n ",task->comm);
+    // printk(KERN_INFO "buflen: %d\n", (int)strlen(buf));
+    // sprintf(buf,"buf %s\n ","123");
+    // printk(KERN_INFO "buf: %s\n", buf);
+    msg = buf;
+    printk(KERN_INFO "buf: %s\n", buf);
+    printk(KERN_INFO "MSG: %s\n", msg);
 
     msg_size=strlen(msg);
 
@@ -86,6 +93,56 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 
     if(res<0)
         printk(KERN_INFO "Error while sending bak to user\n");
+}
+
+int optionS(struct task_struct *task, char* buf)
+{
+    // struct task_struct *parent = task->parent;
+    // return 0;
+    int len = 0;
+    struct task_struct *task1;
+    struct list_head *list=NULL;
+    // printk(KERN_INFO "%s", task->comm);
+
+    list_for_each(list,&task->sibling) {
+        task1=list_entry(list,struct task_struct,sibling);
+        if(task1->pid > 0) {
+            len += sprintf(buf+len, "%s(%d)\n",task1->comm,task1->pid);
+        }
+    }
+    return len;
+}
+
+int optionP(struct task_struct *task, char* buf)
+{
+    struct task_struct *t;
+    int len = 0;
+    t = task;
+    do {
+        len += sprintf(buf+len, "%s(%d)\n",t->comm,t->pid);
+        printk(KERN_INFO "buf: %s %n\n",t->comm,t->pid);
+        t = t->parent;
+    } while (t->pid != 0);
+}
+
+int optionC(struct task_struct *task, char* buf, int tabCount)
+{
+    struct task_struct *task1;
+    struct list_head *list=NULL;
+
+    list_for_each(list,&task->children) {
+        task1=list_entry(list,struct task_struct,sibling);
+        if(task1->pid > 0) {
+            int i;
+            for(i=0; i<tabCount; ++i) {
+                buflen += sprintf(buf+buflen, "    ");
+            }
+            buflen += sprintf(buf+buflen, "%s(%d)\n",task1->comm,task1->pid);
+            printk("buf: %s\n",buf);
+            optionC(task1, buf, tabCount+1);
+        }
+    }
+    return buflen;
 }
 
 static int __init hello_init(void)

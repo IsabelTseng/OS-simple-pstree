@@ -21,8 +21,8 @@ int main(int argc, char* argv[])
         return -1;
 
     printf("before test\n");
-    char* test="c1";
-    char* pid="";
+    // char* test="c1";
+    // char* pid="";
     char* option = "";
     if(argc == 1) {
         option = "c 1";
@@ -32,11 +32,11 @@ int main(int argc, char* argv[])
             // char* delim = "-";
             if(strlen(argv[1])==2) {
                 // option = strtok(argv[1], delim);
-                if(argv[1][1] == 'p') {
+                if(argv[1][1] == 'c') {
+                    sprintf(msg_to_kernal, "%c %d",argv[1][1], 1);
+                } else {
                     int defaultPid = getpid();
                     sprintf(msg_to_kernal, "p %d", defaultPid);
-                } else {
-                    sprintf(msg_to_kernal, "%c %d",argv[1][1], 1);
                 }
             } else {
                 sprintf(msg_to_kernal, "%c %s",argv[1][1], argv[1]+2);
