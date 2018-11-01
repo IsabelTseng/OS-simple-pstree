@@ -105,9 +105,9 @@ int optionS(struct task_struct *task, char* buf)
     struct list_head *list=NULL;
     // printk(KERN_INFO "%s", task->comm);
 
-    list_for_each(list,&task->sibling) {
+    list_for_each(list,&task->parent->children) {
         task1=list_entry(list,struct task_struct,sibling);
-        if(task1->pid > 0) {
+        if(task1->pid > 0 && task1!=task ) {
             len += sprintf(buf+len, "%s(%d)\n",task1->comm,task1->pid);
         }
     }
