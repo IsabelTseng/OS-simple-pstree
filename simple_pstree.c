@@ -81,6 +81,19 @@ int main(int argc, char* argv[])
 
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
-    printf("%s", (char *)NLMSG_DATA(nlh));
+    char* testresult = (char *)NLMSG_DATA(nlh);
+    int i;
+    int flag = 1;
+    for(i = 0; i<strlen(option); ++i) {
+        if(strlen(testresult)!=strlen(option))break;
+        flag = 0;
+        if(testresult[i]!=option[i]) {
+            flag = 1;
+            break;
+        }
+    }
+    if(flag==1) {
+        printf("%s", (char *)NLMSG_DATA(nlh));
+    }
     close(sock_fd);
 }
